@@ -25,34 +25,43 @@ logging.getLogger("pydantic.v1").setLevel(logging.ERROR)
 sentiment_analyzer = None
 chatbot = None
 
+def is_build_environment():
+    """Check if we're in a build environment (Vercel, CI/CD, etc.)"""
+    import os
+    return (
+        os.getenv('VERCEL') == '1' or
+        os.getenv('CI') == 'true' or
+        os.getenv('BUILD_ENV') == 'true' or
+        os.getenv('NODE_ENV') == 'production' and not os.getenv('OPENAI_API_KEY')
+    )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize services on startup and cleanup on shutdown"""
     global sentiment_analyzer, chatbot
 
+    # Skip heavy initialization during builds to prevent OOM
+    if is_build_environment():
+        logger.info("Build environment detected - skipping heavy service initialization")
+        yield
+        return
+
     logger.info("Initializing services...")
 
-    # Initialize Sentiment Analyzer (with auto-training enabled)
+    # Initialize Sentiment Analyzer (with auto-training disabled for production)
     try:
         sentiment_analyzer = SentimentAnalyzer(
             openai_api_key=settings.openai_api_key,
-            auto_train=True
+            auto_train=False  # Disable auto-training to prevent memory issues
         )
         logger.info("✓ Sentiment Analyzer initialized")
     except Exception as e:
         logger.warning(f"Sentiment Analyzer initialization warning: {e}")
 
-    # Initialize Chatbot
-    try:
-        chatbot = AdvancedChatbot(
-            openai_api_key=settings.openai_api_key,
-            pinecone_api_key=settings.pinecone_api_key,
-            pinecone_index_name=settings.pinecone_index_name
-        )
-        logger.info("✓ Chatbot initialized")
-    except Exception as e:
-        logger.warning(f"Chatbot initialization warning: {e}")
+    # Initialize Chatbot (lazy initialization - only when needed)
+    # chatbot will be initialized on first use to save memory
+    logger.info("Chatbot will be initialized on first use")
 
     yield
 
@@ -195,16 +204,31 @@ class ChatResponse(BaseModel):
     response: str
 
 
+def get_chatbot():
+    """Lazy initialization of chatbot"""
+    global chatbot
+    if chatbot is None:
+        try:
+            chatbot = AdvancedChatbot(
+                openai_api_key=settings.openai_api_key,
+                pinecone_api_key=settings.pinecone_api_key,
+                pinecone_index_name=settings.pinecone_index_name
+            )
+            logger.info("✓ Chatbot initialized on demand")
+        except Exception as e:
+            logger.error(f"Failed to initialize chatbot: {e}")
+            raise HTTPException(status_code=503, detail="Chatbot initialization failed")
+    return chatbot
+
+
 @app.post("/api/chat/message")
 async def chat_message(request: ChatRequest):
     """
     Send a message to the chatbot
     """
     try:
-        if not chatbot:
-            raise HTTPException(status_code=503, detail="Chatbot not initialized")
-
-        response = chatbot.get_response(request.message, use_rag=request.use_rag)
+        bot = get_chatbot()
+        response = bot.get_response(request.message, use_rag=request.use_rag)
 
         return ChatResponse(
             message=request.message,
@@ -219,10 +243,8 @@ async def chat_message(request: ChatRequest):
 async def get_chat_history():
     """Get chat history for current session"""
     try:
-        if not chatbot:
-            raise HTTPException(status_code=503, detail="Chatbot not initialized")
-
-        history = chatbot.get_conversation_history()
+        bot = get_chatbot()
+        history = bot.get_conversation_history()
         return {"history": history}
     except Exception as e:
         logger.error(f"Error getting history: {e}")
@@ -233,10 +255,8 @@ async def get_chat_history():
 async def reset_chat():
     """Reset chat session"""
     try:
-        if not chatbot:
-            raise HTTPException(status_code=503, detail="Chatbot not initialized")
-
-        chatbot.reset_chat()
+        bot = get_chatbot()
+        bot.reset_chat()
         return {"message": "Chat session reset", "status": "success"}
     except Exception as e:
         logger.error(f"Error resetting chat: {e}")
@@ -247,8 +267,7 @@ async def reset_chat():
 async def upload_document(file: UploadFile = File(...)):
     """Upload a PDF document for RAG"""
     try:
-        if not chatbot:
-            raise HTTPException(status_code=503, detail="Chatbot not initialized")
+        bot = get_chatbot()
 
         if file.content_type != "application/pdf":
             raise HTTPException(status_code=400, detail="Only PDF files are allowed")
@@ -261,7 +280,7 @@ async def upload_document(file: UploadFile = File(...)):
 
             # Upload to RAG
             document_id = file.filename.replace(".pdf", "").replace(" ", "_")
-            success = chatbot.upload_document(tmp_file.name, document_id)
+            success = bot.upload_document(tmp_file.name, document_id)
 
             # Clean up temp file
             try:
@@ -293,7 +312,8 @@ async def health_check():
     return {
         "status": "ok",
         "sentiment_analyzer": sentiment_analyzer is not None,
-        "chatbot": chatbot is not None
+        "chatbot": chatbot is not None,
+        "build_optimized": is_build_environment()
     }
 
 
