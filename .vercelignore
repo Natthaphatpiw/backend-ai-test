@@ -1,0 +1,51 @@
+# Build and cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.env.local
+
+# Git and version control
+.git
+.gitignore
+.gitattributes
+
+# Docker
+.dockerignore
+docker-compose.yml
+Dockerfile
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Python packaging
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Test and dev files
+test_build_env.py
+tests/
+test/
+examples/
+docs/
+
+# Node modules (frontend only)
+frontend/node_modules/
+
+# Keep only what we need
+!backend/
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/.next/
