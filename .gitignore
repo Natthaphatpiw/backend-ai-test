@@ -80,10 +80,8 @@ phayathaibert_sentiment/
 
 # Data files
 *.csv
-*.json
 *.db
 *.sqlite
-training_data.json
 
 # Images and media files
 *.png
