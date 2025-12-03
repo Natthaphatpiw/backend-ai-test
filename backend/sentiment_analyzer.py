@@ -43,19 +43,9 @@ class SentimentAnalyzer:
         # Try to load pre-trained models if they exist
         self._load_models()
 
-        # Only auto-train if explicitly enabled and not in build environment
+        # Auto-train models on startup if enabled and not already trained
         if auto_train and not self.training_history['trained']:
-            import os
-            is_build = (
-                os.getenv('VERCEL') == '1' or
-                os.getenv('CI') == 'true' or
-                os.getenv('BUILD_ENV') == 'true' or
-                os.getenv('NODE_ENV') == 'production' and not os.getenv('OPENAI_API_KEY')
-            )
-            if not is_build:
-                self._auto_train_models()
-            else:
-                logger.info("Skipping auto-training during build to prevent OOM")
+            self._auto_train_models()
 
     def analyze_with_openai(self, text: str) -> Optional[Dict]:
         """Analyze sentiment using OpenAI GPT-4o-mini"""
