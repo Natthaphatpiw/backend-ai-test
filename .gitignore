@@ -1,0 +1,108 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.coverage
+.env
+.venv/
+.venv*/
+.venv
+env/
+venv/
+venv*/
+ENV/
+env.bak/
+venv.bak/
+.ipynb_checkpoints/
+*.ipynb
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# NextJS
+node_modules/
+.next/
+out/
+build/
+*.pem
+
+# Misc
+.npm
+.node_repl_history
+
+# ML Models
+models/
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.pth
+*.onnx
+*.safetensors
+checkpoints/
+*/checkpoints/
+bert_sentiment_results/
+phayathaibert_sentiment/
+
+# Data files
+*.csv
+*.json
+*.db
+*.sqlite
+training_data.json
+
+# Images and media files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.webp
+*.mp4
+*.avi
+*.mov
+*.pdf
+
+# Pinecone
+.pinecone/
+
+# Temp files
+temp/
+tmp/
+*.tmp
+*.temp
