@@ -12,7 +12,7 @@ pydantic==2.4.2
 pydantic-settings==2.0.3
 python-multipart==0.0.6
 langchain==0.1.7
-langchain-community==0.1.0
+langchain-community==0.0.38
 langchain-openai==0.1.13
 pinecone==4.0.0
 pypdf==3.15.0
